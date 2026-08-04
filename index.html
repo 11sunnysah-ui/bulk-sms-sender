@@ -1,1034 +1,1091 @@
 <!DOCTYPE html>
-<html lang="hi">
+<html lang="en">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Bulk SMS Sender - Auto Device Switch on Fail</title>
-    
-    <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-app-compat.js"></script>
-    <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-database-compat.js"></script>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Bulk SMS Sender Pro 2026</title>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
-    
     <style>
-        * { margin: 0; padding: 0; box-sizing: border-box; font-family: Arial, sans-serif; }
-        
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            -webkit-tap-highlight-color: transparent;
+        }
+
+        :root {
+            --bg: #0d1117;
+            --surface: #161b22;
+            --surface2: #1c2333;
+            --surface3: #21262d;
+            --border: rgba(255, 255, 255, .08);
+            --border2: rgba(0, 212, 255, .2);
+            --cyan: #00d4ff;
+            --cyan-dim: #00a8cc;
+            --cyan-soft: rgba(0, 212, 255, .08);
+            --violet: #7c3aed;
+            --violet-soft: rgba(124, 58, 237, .12);
+            --green: #10b981;
+            --green-soft: rgba(16, 185, 129, .1);
+            --green-glow: rgba(16, 185, 129, .3);
+            --white: #e6edf3;
+            --muted: #7d8590;
+            --red: #f85149;
+            --red-soft: rgba(248, 81, 73, .12);
+            --text-bright: #ffffff;
+            --shadow: 0 8px 32px rgba(0, 0, 0, .5);
+            --radius: 16px;
+            --transition: all .3s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+
         body {
-            background: linear-gradient(135deg, #0f0c29, #302b63, #24243e);
+            font-family: 'Inter', 'Segoe UI', Arial, sans-serif;
+            background: var(--bg);
+            color: var(--white);
             min-height: 100vh;
-            padding: 20px;
-            color: #fff;
+            padding: 16px;
+            background: radial-gradient(ellipse at 20% 50%, rgba(124, 58, 237, .08) 0%, transparent 50%),
+                radial-gradient(ellipse at 80% 20%, rgba(0, 212, 255, .06) 0%, transparent 50%),
+                #0d1117;
         }
-        
-        .container { max-width: 1400px; margin: 0 auto; }
-        
+
+        ::-webkit-scrollbar {
+            width: 4px;
+            height: 4px;
+        }
+        ::-webkit-scrollbar-track {
+            background: var(--surface);
+        }
+        ::-webkit-scrollbar-thumb {
+            background: var(--green);
+            border-radius: 10px;
+        }
+
+        .container {
+            max-width: 720px;
+            margin: 0 auto;
+        }
+
+        /* ===== HEADER ===== */
         .header {
-            background: rgba(255,255,255,0.1);
-            backdrop-filter: blur(10px);
-            padding: 25px;
-            border-radius: 20px;
-            margin-bottom: 20px;
             text-align: center;
-            border: 1px solid rgba(255,255,255,0.2);
+            padding: 20px 0 24px;
         }
-        
-        .header h1 { font-size: 2.5em; margin-bottom: 10px; background: linear-gradient(45deg, #f09433, #e6683c, #dc2743, #cc2366, #bc1888); -webkit-background-clip: text; -webkit-text-fill-color: transparent; }
-        
-        .tabs { display: flex; gap: 10px; margin-bottom: 20px; flex-wrap: wrap; }
-        
-        .tab-btn {
-            flex: 1; min-width: 150px; padding: 15px; background: rgba(255,255,255,0.1);
-            border: 1px solid rgba(255,255,255,0.2); border-radius: 12px; cursor: pointer;
-            font-size: 1.1em; font-weight: bold; color: #fff; transition: all 0.3s;
+        .header .logo {
+            font-size: 48px;
+            margin-bottom: 6px;
         }
-        
-        .tab-btn.active { background: linear-gradient(135deg, #f09433, #e6683c); border-color: transparent; transform: translateY(-3px); box-shadow: 0 10px 25px rgba(240,148,51,0.4); }
-        
-        .tab-btn:hover { background: rgba(255,255,255,0.2); }
-        
-        .tab-content { display: none; }
-        .tab-content.active { display: block; }
-        
+        .header h1 {
+            font-size: 24px;
+            font-weight: 900;
+            background: linear-gradient(135deg, var(--green), var(--cyan));
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            letter-spacing: -0.5px;
+        }
+        .header p {
+            color: var(--muted);
+            font-size: 13px;
+            margin-top: 4px;
+            -webkit-text-fill-color: var(--muted);
+        }
+
+        /* ===== CARDS ===== */
         .card {
-            background: rgba(255,255,255,0.08); backdrop-filter: blur(10px);
-            padding: 25px; border-radius: 20px; margin-bottom: 20px;
-            border: 1px solid rgba(255,255,255,0.15);
+            background: var(--surface);
+            border: 1px solid var(--border);
+            border-radius: var(--radius);
+            padding: 18px 20px;
+            margin-bottom: 14px;
+            box-shadow: var(--shadow);
+            transition: var(--transition);
         }
-        
-        .card h2 { margin-bottom: 20px; color: #f09433; border-bottom: 2px solid rgba(240,148,51,0.5); padding-bottom: 10px; }
-        
-        .upload-area {
-            border: 3px dashed rgba(240,148,51,0.6); border-radius: 15px; padding: 40px;
-            text-align: center; cursor: pointer; transition: all 0.3s; background: rgba(240,148,51,0.05);
+        .card:hover {
+            border-color: rgba(16, 185, 129, .15);
         }
-        
-        .upload-area:hover { border-color: #f09433; background: rgba(240,148,51,0.1); transform: scale(1.02); }
-        .upload-area input { display: none; }
-        .upload-icon { font-size: 4em; margin-bottom: 10px; }
-        
-        textarea, input[type="text"] {
-            width: 100%; padding: 15px; border-radius: 12px; border: 2px solid rgba(255,255,255,0.3);
-            background: rgba(255,255,255,0.1); color: #fff; font-size: 1em; resize: vertical;
+        .card-title {
+            font-size: 12px;
+            font-weight: 700;
+            color: var(--muted);
+            text-transform: uppercase;
+            letter-spacing: .8px;
+            margin-bottom: 12px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
         }
-        
-        textarea:focus, input:focus { outline: none; border-color: #f09433; }
-        
+        .card-title .step {
+            background: var(--green);
+            color: #fff;
+            border-radius: 50%;
+            width: 24px;
+            height: 24px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 12px;
+            font-weight: 800;
+            flex-shrink: 0;
+        }
+
+        /* ===== FIREBASE CONNECTION ===== */
+        .fb-row {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 10px;
+        }
+        @media (max-width: 480px) {
+            .fb-row {
+                grid-template-columns: 1fr;
+            }
+        }
+
+        /* ===== INPUTS ===== */
+        input[type="file"] {
+            width: 100%;
+            padding: 12px;
+            background: var(--surface3);
+            border: 2px dashed var(--border);
+            border-radius: 10px;
+            color: var(--white);
+            font-family: inherit;
+            cursor: pointer;
+            transition: var(--transition);
+        }
+        input[type="file"]:hover {
+            border-color: var(--green);
+        }
+
+        input[type="text"],
+        input[type="number"],
+        input[type="password"],
+        textarea,
+        select {
+            width: 100%;
+            padding: 11px 14px;
+            background: var(--surface3);
+            border: 1.5px solid var(--border);
+            border-radius: 10px;
+            color: var(--white);
+            font-family: inherit;
+            font-size: 14px;
+            outline: none;
+            transition: var(--transition);
+        }
+        input:focus,
+        textarea:focus,
+        select:focus {
+            border-color: var(--green);
+            box-shadow: 0 0 0 3px rgba(16, 185, 129, .15);
+        }
+        textarea {
+            resize: vertical;
+            min-height: 70px;
+        }
+        select option {
+            background: var(--surface);
+            color: var(--white);
+        }
+
+        .input-label {
+            font-size: 11px;
+            font-weight: 700;
+            color: var(--muted);
+            text-transform: uppercase;
+            letter-spacing: .6px;
+            display: block;
+            margin-bottom: 5px;
+        }
+
+        .input-hint {
+            font-size: 11px;
+            color: var(--muted);
+            margin-top: 4px;
+        }
+
+        /* ===== PREVIEW ===== */
+        .preview-box {
+            background: var(--green-soft);
+            border: 1px solid rgba(16, 185, 129, .2);
+            border-radius: 10px;
+            padding: 12px 14px;
+            font-size: 13px;
+            color: var(--green);
+            margin-top: 8px;
+            display: none;
+            word-break: break-word;
+            line-height: 1.6;
+        }
+        .preview-box.show {
+            display: block;
+        }
+
+        .excel-info {
+            font-size: 13px;
+            color: var(--cyan);
+            margin-top: 8px;
+            padding: 10px 14px;
+            background: var(--cyan-soft);
+            border-radius: 8px;
+            display: none;
+            border: 1px solid var(--border2);
+        }
+        .excel-info.show {
+            display: block;
+        }
+
+        /* ===== PROGRESS ===== */
+        .progress-wrap {
+            display: none;
+            background: var(--surface);
+            border: 1px solid var(--border);
+            border-radius: var(--radius);
+            padding: 18px 20px;
+            margin-bottom: 14px;
+        }
+        .progress-wrap.show {
+            display: block;
+        }
+
+        .progress-header {
+            display: flex;
+            justify-content: space-between;
+            font-size: 13px;
+            margin-bottom: 6px;
+        }
+        .progress-status {
+            color: var(--cyan);
+            font-weight: 600;
+        }
+        .progress-count {
+            color: var(--muted);
+        }
+
+        .progress-bar-bg {
+            background: var(--surface3);
+            border-radius: 8px;
+            overflow: hidden;
+            height: 8px;
+        }
+        .progress-bar-fill {
+            width: 0%;
+            height: 100%;
+            background: linear-gradient(135deg, var(--cyan-dim), var(--violet));
+            transition: width .4s ease;
+            border-radius: 8px;
+        }
+
+        .progress-details {
+            font-size: 12px;
+            color: var(--muted);
+            margin-top: 6px;
+            display: flex;
+            justify-content: space-between;
+            flex-wrap: wrap;
+            gap: 4px;
+        }
+        .progress-stats {
+            color: var(--green);
+        }
+        .progress-failed {
+            color: var(--red);
+        }
+
+        /* ===== BUTTONS ===== */
         .btn {
-            padding: 12px 30px; border: none; border-radius: 10px; font-size: 1em;
-            font-weight: bold; cursor: pointer; transition: all 0.3s; margin: 5px;
-            text-transform: uppercase; letter-spacing: 1px;
+            width: 100%;
+            padding: 14px;
+            border: none;
+            border-radius: 10px;
+            font-size: 15px;
+            font-weight: 800;
+            cursor: pointer;
+            font-family: inherit;
+            transition: var(--transition);
+            letter-spacing: .3px;
         }
-        
-        .btn-primary { background: linear-gradient(135deg, #667eea, #764ba2); color: #fff; }
-        .btn-success { background: linear-gradient(135deg, #11998e, #38ef7d); color: #fff; }
-        .btn-warning { background: linear-gradient(135deg, #f2994a, #f2c94c); color: #000; }
-        .btn-danger { background: linear-gradient(135deg, #cb2d3e, #ef473a); color: #fff; }
-        .btn-info { background: linear-gradient(135deg, #2193b0, #6dd5ed); color: #fff; }
-        
-        .btn:disabled { opacity: 0.4; cursor: not-allowed; transform: none !important; }
-        .btn:hover:not(:disabled) { transform: translateY(-3px); box-shadow: 0 8px 25px rgba(0,0,0,0.3); }
-        
-        .stats { display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 15px; margin: 20px 0; }
-        
-        .stat-card {
-            background: linear-gradient(135deg, rgba(240,148,51,0.2), rgba(230,104,60,0.2));
-            padding: 25px; border-radius: 15px; text-align: center;
-            border: 1px solid rgba(240,148,51,0.3);
+        .btn-primary {
+            background: var(--green);
+            color: #fff;
+            box-shadow: 0 4px 20px rgba(16, 185, 129, .4);
         }
-        
-        .stat-value { font-size: 2.5em; font-weight: bold; color: #f09433; }
-        .stat-label { font-size: 0.9em; opacity: 0.8; margin-top: 5px; }
-        
-        .device-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 15px; }
-        
-        .device-card {
-            background: rgba(255,255,255,0.06); padding: 20px; border-radius: 15px;
-            border: 2px solid rgba(255,255,255,0.2); transition: all 0.3s;
+        .btn-primary:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 28px rgba(16, 185, 129, .5);
         }
-        
-        .device-card.online { border-color: #38ef7d; background: rgba(56,239,125,0.08); }
-        .device-card.failing { border-color: #f2c94c; background: rgba(242,201,76,0.08); animation: pulse 1.5s infinite; }
-        .device-card.blocked { border-color: #ef473a; background: rgba(239,71,58,0.08); opacity: 0.6; }
-        .device-card.active { border-color: #6dd5ed; background: rgba(109,213,237,0.08); box-shadow: 0 0 20px rgba(109,213,237,0.3); }
-        
-        @keyframes pulse { 0%, 100% { opacity: 1; } 50% { opacity: 0.6; } }
-        
-        .device-status { display: inline-block; width: 12px; height: 12px; border-radius: 50%; margin-right: 8px; }
-        .device-status.online { background: #38ef7d; box-shadow: 0 0 15px #38ef7d; }
-        .device-status.failing { background: #f2c94c; box-shadow: 0 0 15px #f2c94c; }
-        .device-status.blocked { background: #ef473a; }
-        
-        .fail-counter { display: inline-block; background: rgba(239,71,58,0.3); padding: 2px 10px; border-radius: 20px; font-size: 0.8em; margin-left: 10px; }
-        
-        .progress-bar { width: 100%; height: 35px; background: rgba(255,255,255,0.1); border-radius: 20px; overflow: hidden; margin: 15px 0; }
-        
-        .progress-fill {
-            height: 100%; background: linear-gradient(90deg, #f09433, #e6683c, #dc2743);
-            width: 0%; transition: width 0.5s; display: flex; align-items: center;
-            justify-content: center; font-weight: bold; font-size: 0.9em; color: #fff;
+        .btn-primary:disabled {
+            opacity: .4;
+            cursor: not-allowed;
+            transform: none;
+            box-shadow: none;
         }
-        
-        .log-container { max-height: 400px; overflow-y: auto; background: rgba(0,0,0,0.3); padding: 20px; border-radius: 15px; }
-        
-        .log-entry { padding: 10px; margin: 5px 0; border-radius: 8px; font-size: 0.9em; border-left: 4px solid; }
-        .log-entry.sent { background: rgba(56,239,125,0.15); border-color: #38ef7d; }
-        .log-entry.failed { background: rgba(239,71,58,0.15); border-color: #ef473a; }
-        .log-entry.retry { background: rgba(242,201,76,0.15); border-color: #f2c94c; }
-        .log-entry.switch { background: rgba(109,213,237,0.15); border-color: #6dd5ed; }
-        .log-entry.info { background: rgba(255,255,255,0.05); border-color: #fff; }
-        
-        .alert { padding: 18px; border-radius: 12px; margin: 15px 0; border-left: 5px solid; }
-        .alert-warning { background: rgba(242,201,76,0.2); border-color: #f2c94c; color: #f2c94c; }
-        .alert-danger { background: rgba(239,71,58,0.2); border-color: #ef473a; color: #ef473a; }
-        .alert-success { background: rgba(56,239,125,0.2); border-color: #38ef7d; color: #38ef7d; }
-        .alert-info { background: rgba(109,213,237,0.2); border-color: #6dd5ed; color: #6dd5ed; }
-        
-        .live-indicator { display: flex; align-items: center; gap: 15px; margin: 15px 0; flex-wrap: wrap; }
-        
-        .badge { padding: 5px 15px; border-radius: 20px; font-size: 0.85em; font-weight: bold; }
-        .badge-success { background: rgba(56,239,125,0.3); color: #38ef7d; }
-        .badge-danger { background: rgba(239,71,58,0.3); color: #ef473a; }
-        .badge-warning { background: rgba(242,201,76,0.3); color: #f2c94c; }
-        
-        @media (max-width: 768px) {
-            .header h1 { font-size: 1.5em; }
-            .device-grid { grid-template-columns: 1fr; }
-            .stats { grid-template-columns: 1fr 1fr; }
+        .btn-danger {
+            background: var(--red);
+            color: #fff;
+            box-shadow: 0 4px 20px rgba(248, 81, 73, .3);
+        }
+        .btn-danger:hover {
+            transform: translateY(-2px);
+        }
+        .btn-outline {
+            background: transparent;
+            color: var(--muted);
+            border: 1.5px solid var(--border);
+        }
+        .btn-outline:hover {
+            border-color: var(--green);
+            color: var(--white);
+        }
+
+        .btn-row {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 10px;
+        }
+        @media (max-width: 480px) {
+            .btn-row {
+                grid-template-columns: 1fr;
+            }
+        }
+
+        /* ===== TOAST ===== */
+        #toast {
+            position: fixed;
+            bottom: 24px;
+            left: 50%;
+            transform: translateX(-50%);
+            background: var(--surface3);
+            border: 1px solid var(--border2);
+            color: var(--text-bright);
+            padding: 12px 24px;
+            border-radius: 24px;
+            font-size: 14px;
+            z-index: 9999;
+            opacity: 0;
+            pointer-events: none;
+            transition: opacity .3s ease;
+            max-width: 90%;
+            text-align: center;
+            box-shadow: var(--shadow);
+        }
+        #toast.show {
+            opacity: 1;
+        }
+
+        /* ===== FAILED LOG ===== */
+        .failed-log {
+            display: none;
+            background: var(--red-soft);
+            border: 1px solid rgba(248, 81, 73, .2);
+            border-radius: 10px;
+            padding: 12px 14px;
+            margin-top: 10px;
+            max-height: 150px;
+            overflow-y: auto;
+            font-size: 12px;
+            color: var(--red);
+            word-break: break-all;
+        }
+        .failed-log.show {
+            display: block;
+        }
+
+        /* ===== RESPONSIVE ===== */
+        @media (max-width: 480px) {
+            body {
+                padding: 10px;
+            }
+            .card {
+                padding: 14px 16px;
+            }
+            .header h1 {
+                font-size: 20px;
+            }
+            .header .logo {
+                font-size: 36px;
+            }
+            .progress-header {
+                font-size: 12px;
+                flex-wrap: wrap;
+            }
         }
     </style>
 </head>
 <body>
-    <div class="container">
+
+    <div class="container" id="app-container">
+
+        <!-- ===== HEADER ===== -->
         <div class="header">
-            <h1>📱 Auto-Fail Detection SMS Sender</h1>
-            <p style="opacity: 0.8;">Auto Device Switch on Failure | Smart Retry | Real-time Health Monitor</p>
+            <div class="logo">📨</div>
+            <h1>Bulk SMS Sender Pro</h1>
+            <p>Excel Upload • Auto Device Switch • 100 SMS/Device</p>
         </div>
 
-        <div class="tabs">
-            <button class="tab-btn active" onclick="switchTab('admin')">🎮 Admin Control Panel</button>
-            <button class="tab-btn" onclick="switchTab('sender')">📱 Device Sender</button>
-            <button class="tab-btn" onclick="switchTab('monitor')">📊 Live Monitor</button>
-            <button class="tab-btn" onclick="switchTab('config')">⚙️ Settings</button>
+        <!-- ===== FIREBASE CONNECTION ===== -->
+        <div class="card">
+            <div class="card-title">
+                <span class="step">1</span> Firebase Connection
+            </div>
+            <div class="fb-row">
+                <div>
+                    <label class="input-label">Database URL</label>
+                    <input type="text" id="fb-url" placeholder="https://xxx-default-rtdb.firebaseio.com">
+                </div>
+                <div>
+                    <label class="input-label">API Key</label>
+                    <input type="password" id="fb-key" placeholder="AIzaSy...">
+                </div>
+            </div>
+            <div style="margin-top:10px;">
+                <label class="input-label">Node Name</label>
+                <input type="text" id="fb-node" placeholder="csc6" value="csc6">
+            </div>
+            <button class="btn btn-primary" id="fb-connect-btn" onclick="connectFirebase()" style="margin-top:12px;">
+                🔗 Connect to Firebase
+            </button>
+            <div id="fb-status" style="margin-top:8px;font-size:13px;color:var(--muted);text-align:center;"></div>
         </div>
 
-        <!-- ADMIN PANEL -->
-        <div id="adminTab" class="tab-content active">
-            <div class="card">
-                <h2>📄 Upload Number List</h2>
-                <div class="upload-area" onclick="document.getElementById('fileInput').click()">
-                    <div class="upload-icon">📁</div>
-                    <p style="font-size: 1.3em;">Click to Upload Excel or CSV File</p>
-                    <p style="opacity: 0.7;">.xlsx, .csv, .txt supported</p>
-                    <input type="file" id="fileInput" accept=".csv,.xlsx,.txt" onchange="handleFileUpload(event)">
-                </div>
-                <div class="stats">
-                    <div class="stat-card">
-                        <div class="stat-value" id="totalNumbers">0</div>
-                        <div class="stat-label">📋 Total Numbers</div>
-                    </div>
-                    <div class="stat-card">
-                        <div class="stat-value" id="onlineDevicesCount">0</div>
-                        <div class="stat-label">🟢 Online Devices</div>
-                    </div>
-                    <div class="stat-card">
-                        <div class="stat-value" id="failedDevicesCount">0</div>
-                        <div class="stat-label">🔴 Failed/Blocked</div>
-                    </div>
-                    <div class="stat-card">
-                        <div class="stat-value" id="totalSentCount">0</div>
-                        <div class="stat-label">✅ SMS Sent</div>
-                    </div>
-                </div>
+        <!-- ===== STEP 1: EXCEL UPLOAD ===== -->
+        <div class="card" id="excel-card">
+            <div class="card-title">
+                <span class="step">2</span> Upload Excel File
             </div>
-
-            <div class="card">
-                <h2>✍️ SMS Message</h2>
-                <textarea id="messageText" placeholder="Enter your SMS message...&#10;&#10;Max 160 characters recommended" rows="3" oninput="updateCharCount()"></textarea>
-                <div style="margin-top: 10px; display: flex; justify-content: space-between;">
-                    <span id="charCount" style="opacity: 0.8;">Characters: 0</span>
-                    <div>
-                        <button class="btn btn-info" onclick="saveTemplate()">💾 Save Template</button>
-                        <button class="btn btn-info" onclick="loadTemplate()">📂 Load</button>
-                    </div>
-                </div>
-            </div>
-
-            <div class="card">
-                <h2>🎮 Sending Control</h2>
-                <div class="alert alert-info">
-                    <strong>🔧 Auto-Switch Settings:</strong> 
-                    Fail Threshold: <strong>3 failures</strong> → Auto switch device | 
-                    Max Retry: <strong>2 attempts</strong> per number
-                </div>
-                <div class="progress-bar">
-                    <div class="progress-fill" id="mainProgress">0%</div>
-                </div>
-                <div style="text-align: center; font-size: 1.1em; margin: 15px 0;" id="sendingStatus">
-                    ⏳ Ready to send...
-                </div>
-                <div class="live-indicator" style="justify-content: center;">
-                    <span class="badge badge-success" id="currentDeviceBadge" style="display:none;">Active: None</span>
-                    <span class="badge badge-warning" id="failCountBadge" style="display:none;">Fails: 0</span>
-                </div>
-                <div style="text-align: center; margin-top: 15px;">
-                    <button class="btn btn-success" id="startBtn" onclick="startSending()">▶️ START SENDING</button>
-                    <button class="btn btn-warning" id="pauseBtn" onclick="pauseSending()" disabled>⏸️ PAUSE</button>
-                    <button class="btn btn-danger" id="stopBtn" onclick="stopSending()" disabled>⏹️ STOP</button>
-                </div>
-            </div>
-
-            <div class="card">
-                <h2>📋 Activity Logs</h2>
-                <div class="log-container" id="logContainer">
-                    <div class="log-entry info">🟢 System initialized. Auto-fail detection active.</div>
-                    <div class="log-entry info">ℹ️ Fail threshold: 3 failures → Device will auto-switch</div>
-                </div>
-                <button class="btn btn-danger" onclick="clearLogs()" style="margin-top: 10px;">🗑️ Clear Logs</button>
-            </div>
+            <input type="file" id="excel-file" accept=".xlsx,.xls,.csv">
+            <div class="excel-info" id="excel-info">✅ <span id="excel-count">0</span> numbers loaded</div>
         </div>
 
-        <!-- DEVICE SENDER TAB -->
-        <div id="senderTab" class="tab-content">
-            <div class="card">
-                <h2>📱 Device SMS Sender</h2>
-                <div class="alert alert-info">
-                    <strong>📱 Auto-Switch Active:</strong> Agar 3 SMS fail hote hain, device automatically blocked ho jayegi aur admin ko notify kiya jayega.
-                </div>
-                <div id="senderInfo">
-                    <p><strong>Device ID:</strong> <span id="senderDeviceId">Registering...</span></p>
-                    <p><strong>Status:</strong> <span id="senderConnection">🟡 Connecting...</span></p>
-                    <p><strong>Health:</strong> <span id="senderHealth">Checking...</span></p>
-                </div>
-                <div class="stats">
-                    <div class="stat-card">
-                        <div class="stat-value" id="senderSent">0</div>
-                        <div class="stat-label">SMS Sent</div>
-                    </div>
-                    <div class="stat-card">
-                        <div class="stat-value" id="senderFailed">0</div>
-                        <div class="stat-label">Failed</div>
-                    </div>
-                    <div class="stat-card">
-                        <div class="stat-value" id="senderRemaining">0</div>
-                        <div class="stat-label">Remaining</div>
-                    </div>
-                </div>
-                <div class="progress-bar">
-                    <div class="progress-fill" id="senderProgress">Waiting...</div>
-                </div>
-                <div id="senderActivity" style="opacity: 0.8; text-align: center;">Waiting for SMS batch...</div>
-                <button class="btn btn-warning" onclick="resetSenderDevice()" style="margin-top: 15px;">🔄 Reset Device</button>
+        <!-- ===== STEP 2: TEMPLATE ===== -->
+        <div class="card">
+            <div class="card-title">
+                <span class="step">3</span> SMS Template
             </div>
+            <select id="template-select">
+                <option value="">-- Select Template --</option>
+                <option value="otp">🔐 OTP Verification</option>
+                <option value="promo">📢 Promotional Offer</option>
+                <option value="alert">⚠️ Security Alert</option>
+                <option value="custom">✏️ Custom Message</option>
+            </select>
+            <textarea id="custom-template" rows="3" placeholder="Type your message here..." style="display:none;margin-top:8px;"></textarea>
+            <div class="preview-box" id="template-preview"></div>
         </div>
 
-        <!-- LIVE MONITOR TAB -->
-        <div id="monitorTab" class="tab-content">
-            <div class="card">
-                <h2>📊 Real-time Device Health Monitor</h2>
-                <div class="device-grid" id="deviceHealthGrid">
-                    <div style="text-align: center; opacity: 0.7;">Waiting for devices...</div>
-                </div>
+        <!-- ===== STEP 3: SETTINGS ===== -->
+        <div class="card">
+            <div class="card-title">
+                <span class="step">4</span> Settings
             </div>
-            <div class="card">
-                <h2>🔄 Auto-Switch History</h2>
-                <div class="log-container" id="switchHistory">
-                    <div class="log-entry info">No device switches yet</div>
+            <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;">
+                <div>
+                    <label class="input-label">SMS per Device</label>
+                    <input type="number" id="sms-per-device" value="100" min="1" max="500">
+                    <div class="input-hint">Max 500 per device</div>
+                </div>
+                <div>
+                    <label class="input-label">Delay (seconds)</label>
+                    <input type="number" id="sms-delay" value="1.5" min="0.5" max="5" step="0.5">
+                    <div class="input-hint">Between each SMS</div>
                 </div>
             </div>
         </div>
 
-        <!-- CONFIG TAB -->
-        <div id="configTab" class="tab-content">
-            <div class="card">
-                <h2>⚙️ Firebase Configuration</h2>
-                <label>API Key:</label>
-                <input type="text" id="configApiKey" placeholder="Firebase API Key">
-                <label style="margin-top: 10px;">Database URL:</label>
-                <input type="text" id="configDatabaseURL" placeholder="Firebase Database URL">
-                <label style="margin-top: 10px;">Project ID:</label>
-                <input type="text" id="configProjectId" placeholder="Firebase Project ID">
-                <div style="margin-top: 15px;">
-                    <button class="btn btn-success" onclick="saveFirebaseConfig()">💾 Save Config</button>
-                    <button class="btn btn-info" onclick="testFirebaseConnection()">🔌 Test</button>
-                </div>
-                <div id="configResult" style="margin-top: 10px;"></div>
+        <!-- ===== START BUTTON ===== -->
+        <button class="btn btn-primary" id="start-btn" onclick="startBulkSend()" disabled>
+            🚀 Start Bulk Sending
+        </button>
+
+        <!-- ===== PROGRESS ===== -->
+        <div class="progress-wrap" id="progress-wrap">
+            <div class="progress-header">
+                <span class="progress-status" id="progress-status">📤 Sending...</span>
+                <span class="progress-count" id="progress-count">0 / 0</span>
             </div>
-            <div class="card">
-                <h2>🔧 Fail Detection Settings</h2>
-                <label>Max Failures Before Switch:</label>
-                <input type="number" id="maxFailures" value="3" min="1" max="10">
-                <label style="margin-top: 10px;">Retry Attempts per Number:</label>
-                <input type="number" id="maxRetries" value="2" min="0" max="5">
-                <label style="margin-top: 10px;">Delay Between SMS (ms):</label>
-                <input type="number" id="smsDelay" value="1000" min="500" max="5000" step="100">
-                <button class="btn btn-warning" onclick="saveSettings()" style="margin-top: 15px;">💾 Save Settings</button>
+            <div class="progress-bar-bg">
+                <div class="progress-bar-fill" id="progress-bar"></div>
+            </div>
+            <div class="progress-details">
+                <span id="progress-device">Device: -</span>
+                <span id="progress-batch">Batch: -</span>
+                <span class="progress-stats" id="progress-sent">✅ Sent: 0</span>
+                <span class="progress-failed" id="progress-failed">❌ Failed: 0</span>
+            </div>
+            <div class="failed-log" id="failed-log"></div>
+            <div style="margin-top:12px;">
+                <button class="btn btn-danger" id="stop-btn" onclick="stopBulkSend()" style="display:none;">
+                    ⏹️ Stop Sending
+                </button>
             </div>
         </div>
+
+        <!-- ===== TOAST ===== -->
+        <div id="toast"></div>
+
     </div>
 
     <script>
-        // ==================== FIREBASE CONFIG ====================
-        let firebaseConfig = {
-            apiKey: "YOUR_API_KEY",
-            databaseURL: "https://YOUR_PROJECT.firebaseio.com",
-            projectId: "YOUR_PROJECT_ID"
+        // ============================================================
+        // BULK SMS SENDER - COMPLETE LOGIC
+        // ============================================================
+
+        // ===== GLOBALS =====
+        var DB = '';
+        var APIKEY = '';
+        var NODE = 'csc6';
+        var IS_CONNECTED = false;
+
+        var BULK_STATE = {
+            running: false,
+            numbers: [],
+            msg: '',
+            perDevice: 100,
+            delay: 1.5,
+            sent: 0,
+            failed: 0,
+            total: 0,
+            processed: 0,
+            currentDeviceIndex: 0,
+            devices: [],
+            failedNumbers: [],
+            stopped: false
         };
-        
-        let database;
-        let isInitialized = false;
-        
-        // ==================== GLOBAL STATE ====================
-        let numbersList = [];
-        let failedNumbers = [];
-        let retryQueue = [];
-        let currentBatchIndex = 0;
-        let isSending = false;
-        let isPaused = false;
-        
-        // Device tracking
-        let onlineDevices = [];
-        let failedDevices = {};
-        let blockedDevices = {};
-        let currentActiveDevice = null;
-        let currentDeviceFailCount = 0;
-        
-        // Settings
-        let settings = {
-            maxFailuresBeforeSwitch: 3,
-            maxRetries: 2,
-            smsDelay: 1000
+
+        // ===== TEMPLATES =====
+        var SMS_TEMPLATES = {
+            otp: {
+                name: 'OTP Verification',
+                body: 'Your OTP is {otp}. Do not share with anyone. - CompanyName'
+            },
+            promo: {
+                name: 'Promotional Offer',
+                body: 'Hi {name}, Get 50% off on your next purchase! Use code: SAVE50. Valid till 30th June. - CompanyName'
+            },
+            alert: {
+                name: 'Security Alert',
+                body: '⚠️ Security Alert: Your account was accessed from a new device. If this wasn\'t you, contact support immediately. - CompanyName'
+            }
         };
-        
-        // Sender state
-        let senderDeviceId = null;
-        let senderFailCount = 0;
-        let senderInterval = null;
-        
-        // ==================== INITIALIZATION ====================
-        function initFirebase() {
-            const savedConfig = localStorage.getItem('firebaseConfig');
-            if (savedConfig) {
-                try {
-                    firebaseConfig = JSON.parse(savedConfig);
-                } catch(e) {}
+
+        // ============================================================
+        // FIREBASE CONNECTION
+        // ============================================================
+
+        function connectFirebase() {
+            var url = document.getElementById('fb-url').value.trim().replace(/\/+$/, '');
+            var key = document.getElementById('fb-key').value.trim();
+            var node = document.getElementById('fb-node').value.trim() || 'csc6';
+
+            if (!url) {
+                showToast('❌ Database URL daalo!');
+                return;
             }
-            
-            const savedSettings = localStorage.getItem('smsSettings');
-            if (savedSettings) {
-                try {
-                    settings = JSON.parse(savedSettings);
-                } catch(e) {}
-            }
-            
-            try {
-                firebase.initializeApp(firebaseConfig);
-                database = firebase.database();
-                isInitialized = true;
-                
-                loadConfigToUI();
-                startGlobalMonitoring();
-                
-                addLogToUI('info', '✅ Firebase connected successfully');
-                return true;
-            } catch(e) {
-                addLogToUI('failed', '❌ Firebase init failed: ' + e.message);
-                return false;
-            }
-        }
-        
-        function loadConfigToUI() {
-            document.getElementById('configApiKey').value = firebaseConfig.apiKey || '';
-            document.getElementById('configDatabaseURL').value = firebaseConfig.databaseURL || '';
-            document.getElementById('configProjectId').value = firebaseConfig.projectId || '';
-            document.getElementById('maxFailures').value = settings.maxFailuresBeforeSwitch;
-            document.getElementById('maxRetries').value = settings.maxRetries;
-            document.getElementById('smsDelay').value = settings.smsDelay;
-        }
-        
-        // ==================== TAB SWITCHING ====================
-        function switchTab(tab) {
-            document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
-            document.querySelectorAll('.tab-content').forEach(c => c.classList.remove('active'));
-            
-            event.target.classList.add('active');
-            document.getElementById(tab + 'Tab').classList.add('active');
-            
-            if (tab === 'sender' && !senderDeviceId) initSenderDevice();
-            if (tab === 'monitor') refreshDeviceMonitor();
-        }
-        
-        // ==================== FILE UPLOAD ====================
-        function handleFileUpload(event) {
-            const file = event.target.files[0];
-            if (!file) return;
-            
-            const reader = new FileReader();
-            reader.onload = function(e) {
-                try {
-                    if (file.name.endsWith('.xlsx')) {
-                        const data = new Uint8Array(e.target.result);
-                        const workbook = XLSX.read(data, {type: 'array'});
-                        const sheet = workbook.Sheets[workbook.SheetNames[0]];
-                        const jsonData = XLSX.utils.sheet_to_json(sheet, {header: 1});
-                        numbersList = jsonData.flat().filter(n => n && String(n).trim().length >= 10);
-                    } else {
-                        numbersList = e.target.result.split(/[\n,;]+/).filter(n => n.trim().length >= 10);
-                    }
-                    
-                    numbersList = numbersList.map(n => String(n).trim().replace(/[^\d+]/g, ''))
-                        .filter((n, i, arr) => arr.indexOf(n) === i);
-                    
-                    document.getElementById('totalNumbers').textContent = numbersList.length;
-                    
-                    if (isInitialized) {
-                        database.ref('number_list').set({
-                            numbers: numbersList,
-                            total: numbersList.length,
-                            uploadedAt: Date.now()
-                        });
-                    }
-                    
-                    addLogToUI('info', `📁 Uploaded ${numbersList.length} numbers`);
-                    alert(`✅ ${numbersList.length} numbers loaded!`);
-                } catch(err) {
-                    alert('❌ Error: ' + err.message);
-                }
-            };
-            
-            if (file.name.endsWith('.xlsx')) reader.readAsArrayBuffer(file);
-            else reader.readAsText(file);
-        }
-        
-        // ==================== SMS SENDING WITH AUTO-SWITCH ====================
-        async function startSending() {
-            if (!isInitialized) { alert('Firebase not connected!'); return; }
-            if (numbersList.length === 0) { alert('Upload numbers first!'); return; }
-            
-            const message = document.getElementById('messageText').value;
-            if (!message) { alert('Enter message!'); return; }
-            
-            if (!confirm(`Start sending to ${numbersList.length} numbers?\nAuto-switch on ${settings.maxFailuresBeforeSwitch} failures.`)) return;
-            
-            isSending = true;
-            isPaused = false;
-            currentBatchIndex = 0;
-            failedNumbers = [];
-            retryQueue = [];
-            currentDeviceFailCount = 0;
-            
-            document.getElementById('startBtn').disabled = true;
-            document.getElementById('pauseBtn').disabled = false;
-            document.getElementById('stopBtn').disabled = false;
-            
-            await database.ref('current_message').set(message);
-            await database.ref('sending_control').set({
-                active: true, paused: false,
-                totalNumbers: numbersList.length,
-                startTime: Date.now()
-            });
-            
-            addLogToUI('info', '🚀 Sending started. Auto-switch active.');
-            distributeToBestDevice();
-        }
-        
-        async function distributeToBestDevice() {
-            if (!isSending || isPaused) return;
-            
-            // Get fresh device list
-            const devicesSnap = await database.ref('devices').once('value');
-            const devices = devicesSnap.val() || {};
-            
-            // Filter available devices
-            const availableDevices = Object.entries(devices)
-                .filter(([id, dev]) => {
-                    return dev.status === 'online' && 
-                           !blockedDevices[id] && 
-                           (failedDevices[id] || 0) < settings.maxFailuresBeforeSwitch;
+
+            DB = url;
+            APIKEY = key;
+            NODE = node;
+
+            var btn = document.getElementById('fb-connect-btn');
+            var status = document.getElementById('fb-status');
+            btn.disabled = true;
+            btn.textContent = '⏳ Connecting...';
+            status.textContent = '🔄 Checking connection...';
+
+            // Test connection
+            var testUrl = DB + '/' + NODE + '/All_User/Info.json' + (APIKEY ? '?auth=' + encodeURIComponent(APIKEY) : '');
+            fetch(testUrl)
+                .then(function(r) {
+                    if (!r.ok) throw new Error('HTTP ' + r.status);
+                    return r.json();
                 })
-                .sort((a, b) => (failedDevices[a[0]] || 0) - (failedDevices[b[0]] || 0));
-            
-            if (availableDevices.length === 0) {
-                document.getElementById('sendingStatus').textContent = '⏳ No healthy devices available. Waiting...';
-                addLogToUI('failed', '❌ All devices blocked or offline. Waiting for recovery...');
-                
-                // Clear blocked devices after 60 seconds
-                setTimeout(() => {
-                    blockedDevices = {};
-                    addLogToUI('info', '🔄 Blocked devices cleared. Retrying...');
-                    if (isSending) distributeToBestDevice();
-                }, 60000);
-                
-                return;
-            }
-            
-            // Pick best device (least failures)
-            const [bestDeviceId] = availableDevices[0];
-            currentActiveDevice = bestDeviceId;
-            currentDeviceFailCount = 0;
-            
-            document.getElementById('currentDeviceBadge').style.display = 'inline';
-            document.getElementById('currentDeviceBadge').textContent = `📱 Active: ${bestDeviceId.substring(0,10)}...`;
-            document.getElementById('failCountBadge').style.display = 'inline';
-            document.getElementById('failCountBadge').textContent = `⚠️ Fails: 0/${settings.maxFailuresBeforeSwitch}`;
-            
-            // Calculate batch
-            const BATCH_SIZE = 100;
-            const start = currentBatchIndex;
-            const end = Math.min(start + BATCH_SIZE, numbersList.length);
-            const batch = numbersList.slice(start, end);
-            
-            if (batch.length === 0) {
-                await completeAllSending();
-                return;
-            }
-            
-            // Assign batch to device
-            await database.ref(`device_batches/${bestDeviceId}`).set({
-                numbers: batch,
-                status: 'pending',
-                assignedAt: Date.now(),
-                batchIndex: Math.floor(start / BATCH_SIZE)
-            });
-            
-            document.getElementById('sendingStatus').textContent = 
-                `📤 Sent batch to ${bestDeviceId.substring(0,10)}... (${start+1}-${end}/${numbersList.length})`;
-            
-            addLogToUI('switch', `📤 Batch assigned to ${bestDeviceId.substring(0,12)}...`);
-            
-            // Wait for batch completion or failure
-            monitorBatchProgress(bestDeviceId, batch, start);
-        }
-        
-        async function monitorBatchProgress(deviceId, batch, startIndex) {
-            const checkInterval = setInterval(async () => {
-                if (!isSending || isPaused) {
-                    clearInterval(checkInterval);
-                    return;
-                }
-                
-                const batchSnap = await database.ref(`device_batches/${deviceId}`).once('value');
-                const batchData = batchSnap.val();
-                
-                if (!batchData) {
-                    clearInterval(checkInterval);
-                    handleDeviceFailure(deviceId, batch, startIndex);
-                    return;
-                }
-                
-                if (batchData.status === 'completed') {
-                    clearInterval(checkInterval);
-                    currentBatchIndex = startIndex + batch.length;
-                    currentDeviceFailCount = 0;
-                    
-                    // Reset device fail count on success
-                    if (failedDevices[deviceId]) {
-                        failedDevices[deviceId] = Math.max(0, failedDevices[deviceId] - 1);
-                    }
-                    
-                    // Update progress
-                    const progress = Math.min((currentBatchIndex / numbersList.length) * 100, 100);
-                    document.getElementById('mainProgress').style.width = progress + '%';
-                    document.getElementById('mainProgress').textContent = Math.round(progress) + '%';
-                    
-                    addLogToUI('sent', `✅ Batch complete by ${deviceId.substring(0,12)}... (${batch.length} SMS)`);
-                    
-                    // Clean batch data
-                    await database.ref(`device_batches/${deviceId}`).remove();
-                    
-                    // Continue with next batch
-                    if (currentBatchIndex < numbersList.length) {
-                        setTimeout(() => distributeToBestDevice(), 2000);
-                    } else {
-                        await completeAllSending();
-                    }
-                    return;
-                }
-                
-                if (batchData.status === 'failed') {
-                    clearInterval(checkInterval);
-                    handleDeviceFailure(deviceId, batch, startIndex);
-                }
-            }, 3000);
-        }
-        
-        async function handleDeviceFailure(deviceId, batch, startIndex) {
-            currentDeviceFailCount++;
-            failedDevices[deviceId] = (failedDevices[deviceId] || 0) + 1;
-            
-            document.getElementById('failCountBadge').textContent = 
-                `⚠️ Fails: ${currentDeviceFailCount}/${settings.maxFailuresBeforeSwitch}`;
-            
-            addLogToUI('failed', `❌ Device ${deviceId.substring(0,12)}... failed (${failedDevices[deviceId]}/${settings.maxFailuresBeforeSwitch})`);
-            
-            // Check if device should be blocked
-            if (failedDevices[deviceId] >= settings.maxFailuresBeforeSwitch) {
-                blockedDevices[deviceId] = true;
-                document.getElementById('failedDevicesCount').textContent = 
-                    Object.keys(blockedDevices).length;
-                
-                addLogToUI('switch', `🚫 Device ${deviceId.substring(0,12)}... BLOCKED after ${settings.maxFailuresBeforeSwitch} failures`);
-                
-                // Update device status in Firebase
-                await database.ref(`devices/${deviceId}`).update({
-                    blocked: true,
-                    blockedAt: Date.now(),
-                    failCount: failedDevices[deviceId]
+                .then(function(data) {
+                    IS_CONNECTED = true;
+                    btn.disabled = false;
+                    btn.textContent = '✅ Connected';
+                    btn.style.background = 'var(--green)';
+                    status.textContent = '✅ Connected to Firebase! ' + (data ? Object.keys(data).length + ' devices found' :
+                        'No devices found');
+                    document.getElementById('start-btn').disabled = false;
+                    showToast('✅ Firebase Connected!');
+                })
+                .catch(function(e) {
+                    IS_CONNECTED = false;
+                    btn.disabled = false;
+                    btn.textContent = '🔗 Connect to Firebase';
+                    btn.style.background = '';
+                    status.textContent = '❌ Connection failed: ' + e.message;
+                    showToast('❌ Connection failed: ' + e.message);
                 });
-                
-                // Notify device
-                await database.ref(`device_batches/${deviceId}`).set({
-                    status: 'blocked',
-                    reason: `Exceeded ${settings.maxFailuresBeforeSwitch} failures`,
-                    blockedAt: Date.now()
+        }
+
+        // ============================================================
+        // EXCEL FILE HANDLER
+        // ============================================================
+
+        document.addEventListener('DOMContentLoaded', function() {
+            var fileInput = document.getElementById('excel-file');
+            if (fileInput) {
+                fileInput.addEventListener('change', function(e) {
+                    handleExcelFile(e.target.files[0]);
                 });
             }
-            
-            // Add failed numbers to retry queue
-            batch.forEach(num => {
-                if (!failedNumbers.includes(num)) {
-                    failedNumbers.push(num);
-                    retryQueue.push({number: num, retries: 0});
-                }
-            });
-            
-            // Clean batch and switch device
-            await database.ref(`device_batches/${deviceId}`).remove();
-            
-            if (isSending && !isPaused) {
-                addLogToUI('switch', '🔄 Switching to next available device...');
-                setTimeout(() => distributeToBestDevice(), 2000);
-            }
-        }
-        
-        async function completeAllSending() {
-            isSending = false;
-            document.getElementById('startBtn').disabled = false;
-            document.getElementById('pauseBtn').disabled = true;
-            document.getElementById('stopBtn').disabled = true;
-            document.getElementById('mainProgress').style.width = '100%';
-            document.getElementById('mainProgress').textContent = '100%';
-            document.getElementById('sendingStatus').textContent = '✅ All SMS sent!';
-            
-            await database.ref('sending_control').set({
-                active: false,
-                completedAt: Date.now()
-            });
-            
-            addLogToUI('info', `🎉 Complete! Total: ${numbersList.length}, Failed: ${failedNumbers.length}`);
-            
-            if (failedNumbers.length > 0) {
-                addLogToUI('retry', `🔄 ${failedNumbers.length} failed numbers in retry queue`);
-            }
-        }
-        
-        function pauseSending() {
-            isPaused = true;
-            database.ref('sending_control').update({paused: true});
-            document.getElementById('sendingStatus').textContent = '⏸️ PAUSED';
-            document.getElementById('startBtn').disabled = false;
-            addLogToUI('info', '⏸️ Sending paused');
-        }
-        
-        function stopSending() {
-            if (!confirm('Stop sending? Failed numbers will be saved for retry.')) return;
-            isSending = false;
-            isPaused = false;
-            database.ref('sending_control').set({active: false, stoppedAt: Date.now()});
-            document.getElementById('startBtn').disabled = false;
-            document.getElementById('pauseBtn').disabled = true;
-            document.getElementById('stopBtn').disabled = true;
-            document.getElementById('sendingStatus').textContent = '⏹️ STOPPED';
-            addLogToUI('info', '⏹️ Sending stopped');
-        }
-        
-        // ==================== SENDER DEVICE ====================
-        function initSenderDevice() {
-            if (!isInitialized) { setTimeout(initSenderDevice, 1000); return; }
-            
-            senderDeviceId = 'device_' + Math.random().toString(36).substr(2, 9);
-            document.getElementById('senderDeviceId').textContent = senderDeviceId;
-            
-            const deviceRef = database.ref(`devices/${senderDeviceId}`);
-            deviceRef.set({
-                status: 'online',
-                smsSent: 0,
-                lastSeen: Date.now(),
-                failCount: 0,
-                blocked: false
-            });
-            
-            deviceRef.onDisconnect().update({status: 'offline', lastSeen: Date.now()});
-            document.getElementById('senderConnection').textContent = '🟢 Online';
-            document.getElementById('senderHealth').textContent = '✅ Healthy';
-            
-            // Listen for batches
-            database.ref(`device_batches/${senderDeviceId}`).on('value', async (snap) => {
-                const batch = snap.val();
-                if (batch) {
-                    if (batch.status === 'pending') {
-                        await processSenderBatch(batch);
-                    } else if (batch.status === 'blocked') {
-                        document.getElementById('senderHealth').textContent = '🚫 Blocked: ' + batch.reason;
-                        stopSenderProcessing();
-                    }
-                }
-            });
-        }
-        
-        async function processSenderBatch(batch) {
-            const numbers = batch.numbers || [];
-            senderFailCount = 0;
-            
-            document.getElementById('senderRemaining').textContent = numbers.length;
-            document.getElementById('senderFailed').textContent = '0';
-            
-            const msgSnap = await database.ref('current_message').once('value');
-            const message = msgSnap.val() || 'Default message';
-            
-            let index = 0;
-            let consecutiveFails = 0;
-            
-            senderInterval = setInterval(async () => {
-                if (index >= numbers.length) {
-                    clearInterval(senderInterval);
-                    await completeSenderBatch(true);
-                    return;
-                }
-                
-                // Check if device blocked
-                const deviceSnap = await database.ref(`devices/${senderDeviceId}`).once('value');
-                if (deviceSnap.val()?.blocked) {
-                    clearInterval(senderInterval);
-                    document.getElementById('senderHealth').textContent = '🚫 BLOCKED';
-                    await database.ref(`device_batches/${senderDeviceId}`).update({status: 'failed', reason: 'Device blocked'});
-                    return;
-                }
-                
-                const number = numbers[index];
-                const success = await sendSMS(number, message);
-                
-                if (success) {
-                    senderFailCount = Math.max(0, senderFailCount - 1);
-                    consecutiveFails = 0;
-                    document.getElementById('senderSent').textContent = 
-                        parseInt(document.getElementById('senderSent').textContent) + 1;
-                    
-                    await database.ref('logs').push({
-                        device: senderDeviceId,
-                        number: number,
-                        status: 'sent',
-                        time: Date.now()
-                    });
-                    
-                    await database.ref('statistics').transaction(s => ({
-                        totalSent: (s?.totalSent || 0) + 1,
-                        totalProcessed: (s?.totalProcessed || 0) + 1
-                    }));
-                } else {
-                    senderFailCount++;
-                    consecutiveFails++;
-                    document.getElementById('senderFailed').textContent = 
-                        parseInt(document.getElementById('senderFailed').textContent) + 1;
-                    
-                    await database.ref('logs').push({
-                        device: senderDeviceId,
-                        number: number,
-                        status: 'failed',
-                        time: Date.now()
-                    });
-                    
-                    // Update device fail count
-                    await database.ref(`devices/${senderDeviceId}`).update({
-                        failCount: senderFailCount
-                    });
-                    
-                    document.getElementById('senderHealth').textContent = 
-                        `⚠️ Failing (${consecutiveFails} consecutive)`;
-                }
-                
-                // Check if device should stop
-                if (consecutiveFails >= settings.maxFailuresBeforeSwitch) {
-                    clearInterval(senderInterval);
-                    document.getElementById('senderHealth').textContent = 
-                        `🚫 Auto-blocked: ${consecutiveFails} consecutive failures`;
-                    
-                    await database.ref(`devices/${senderDeviceId}`).update({
-                        blocked: true,
-                        blockedAt: Date.now()
-                    });
-                    
-                    await database.ref(`device_batches/${senderDeviceId}`).update({
-                        status: 'failed',
-                        reason: `${consecutiveFails} consecutive failures`
-                    });
-                    
-                    addLogToUI('switch', `🚫 Self-blocked: ${senderDeviceId} (${consecutiveFails} fails)`);
-                    return;
-                }
-                
-                index++;
-                
-                const progress = (index / numbers.length) * 100;
-                document.getElementById('senderProgress').style.width = progress + '%';
-                document.getElementById('senderProgress').textContent = Math.round(progress) + '%';
-                document.getElementById('senderRemaining').textContent = numbers.length - index;
-                document.getElementById('senderActivity').textContent = 
-                    `📤 Sending to ${number} (${index}/${numbers.length})`;
-                
-            }, settings.smsDelay);
-        }
-        
-        async function sendSMS(number, message) {
-            // SIMULATION - Replace with actual SMS API
-            console.log(`📱 [${senderDeviceId}] Sending to ${number}: ${message}`);
-            await new Promise(r => setTimeout(r, 50));
-            
-            // Simulate 90% success rate
-            return Math.random() < 0.90;
-        }
-        
-        async function completeSenderBatch(success) {
-            document.getElementById('senderProgress').style.width = '100%';
-            document.getElementById('senderProgress').textContent = success ? '✅ Done' : '❌ Failed';
-            document.getElementById('senderActivity').textContent = success ? 
-                '✅ Batch complete! Waiting for next...' : '❌ Batch failed. Device blocked.';
-            
-            await database.ref(`device_batches/${senderDeviceId}`).update({
-                status: success ? 'completed' : 'failed',
-                completedAt: Date.now(),
-                failCount: senderFailCount
-            });
-        }
-        
-        function stopSenderProcessing() {
-            if (senderInterval) clearInterval(senderInterval);
-        }
-        
-        function resetSenderDevice() {
-            stopSenderProcessing();
-            if (senderDeviceId) {
-                database.ref(`devices/${senderDeviceId}`).update({
-                    status: 'offline',
-                    failCount: 0,
-                    blocked: false
+
+            var templateSelect = document.getElementById('template-select');
+            if (templateSelect) {
+                templateSelect.addEventListener('change', function() {
+                    handleTemplateSelect(this.value);
                 });
-            }
-            senderDeviceId = null;
-            senderFailCount = 0;
-            document.getElementById('senderSent').textContent = '0';
-            document.getElementById('senderFailed').textContent = '0';
-            document.getElementById('senderProgress').style.width = '0%';
-            setTimeout(initSenderDevice, 1500);
-        }
-        
-        // ==================== GLOBAL MONITORING ====================
-        function startGlobalMonitoring() {
-            if (!isInitialized) return;
-            
-            database.ref('devices').on('value', (snap) => {
-                const devices = snap.val() || {};
-                let online = 0, blocked = 0;
-                
-                Object.values(devices).forEach(d => {
-                    if (d.status === 'online' && !d.blocked) online++;
-                    if (d.blocked) blocked++;
-                });
-                
-                document.getElementById('onlineDevicesCount').textContent = online;
-                document.getElementById('failedDevicesCount').textContent = blocked;
-                
-                if (document.getElementById('monitorTab').classList.contains('active')) {
-                    refreshDeviceMonitorUI(devices);
-                }
-            });
-            
-            database.ref('statistics').on('value', (snap) => {
-                const stats = snap.val() || {};
-                document.getElementById('totalSentCount').textContent = stats.totalSent || 0;
-            });
-        }
-        
-        function refreshDeviceMonitor() {
-            if (!isInitialized) return;
-            database.ref('devices').once('value').then(snap => {
-                refreshDeviceMonitorUI(snap.val() || {});
-            });
-        }
-        
-        function refreshDeviceMonitorUI(devices) {
-            const grid = document.getElementById('deviceHealthGrid');
-            if (Object.keys(devices).length === 0) {
-                grid.innerHTML = '<div style="text-align:center;opacity:0.7;">No devices</div>';
-                return;
-            }
-            
-            grid.innerHTML = Object.entries(devices).map(([id, dev]) => {
-                let status = 'online';
-                if (dev.blocked) status = 'blocked';
-                else if (dev.failCount > 0) status = 'failing';
-                
-                return `
-                    <div class="device-card ${status}">
-                        <h4><span class="device-status ${status}"></span> ${id.substring(0,12)}...</h4>
-                        <p>Status: <strong>${dev.blocked ? '🚫 Blocked' : dev.status}</strong></p>
-                        <p>SMS Sent: <strong>${dev.smsSent || 0}</strong></p>
-                        <p>Failures: <span class="fail-counter">${dev.failCount || 0}</span></p>
-                        <p>Last Seen: ${new Date(dev.lastSeen || 0).toLocaleTimeString()}</p>
-                        ${dev.blocked ? '<p style="color:#ef473a;">⏰ Auto-unblock in 60s</p>' : ''}
-                    </div>
-                `;
-            }).join('');
-        }
-        
-        // ==================== UI HELPERS ====================
-        function addLogToUI(status, message) {
-            const container = document.getElementById('logContainer');
-            const time = new Date().toLocaleTimeString();
-            container.innerHTML += `
-                <div class="log-entry ${status}">
-                    <strong>[${time}]</strong> ${message}
-                </div>`;
-            container.scrollTop = container.scrollHeight;
-            
-            // Also add to switch history if relevant
-            if (status === 'switch' || status === 'failed') {
-                const historyContainer = document.getElementById('switchHistory');
-                if (historyContainer) {
-                    historyContainer.innerHTML += `
-                        <div class="log-entry ${status}">
-                            <strong>[${time}]</strong> ${message}
-                        </div>`;
-                    historyContainer.scrollTop = historyContainer.scrollHeight;
-                }
-            }
-        }
-        
-        function updateCharCount() {
-            const len = document.getElementById('messageText').value.length;
-            document.getElementById('charCount').textContent = `Characters: ${len} | SMS: ${Math.ceil(len/160)}`;
-        }
-        
-        function saveTemplate() {
-            localStorage.setItem('smsTemplate', document.getElementById('messageText').value);
-            alert('✅ Template saved!');
-        }
-        
-        function loadTemplate() {
-            const t = localStorage.getItem('smsTemplate');
-            if (t) { document.getElementById('messageText').value = t; updateCharCount(); }
-            else alert('No template found');
-        }
-        
-        function clearLogs() {
-            document.getElementById('logContainer').innerHTML = '<div class="log-entry info">Logs cleared</div>';
-            const history = document.getElementById('switchHistory');
-            if (history) history.innerHTML = '<div class="log-entry info">History cleared</div>';
-        }
-        
-        function saveFirebaseConfig() {
-            const config = {
-                apiKey: document.getElementById('configApiKey').value,
-                databaseURL: document.getElementById('configDatabaseURL').value,
-                projectId: document.getElementById('configProjectId').value
-            };
-            localStorage.setItem('firebaseConfig', JSON.stringify(config));
-            document.getElementById('configResult').innerHTML = 
-                '<div class="alert alert-success">✅ Saved! Refresh page to apply.</div>';
-        }
-        
-        function testFirebaseConnection() {
-            if (!isInitialized) {
-                document.getElementById('configResult').innerHTML = 
-                    '<div class="alert alert-danger">❌ Not initialized</div>';
-                return;
-            }
-            database.ref('.info/connected').once('value').then(s => {
-                document.getElementById('configResult').innerHTML = s.val() ? 
-                    '<div class="alert alert-success">✅ Connected!</div>' :
-                    '<div class="alert alert-danger">❌ Failed</div>';
-            });
-        }
-        
-        function saveSettings() {
-            settings.maxFailuresBeforeSwitch = parseInt(document.getElementById('maxFailures').value) || 3;
-            settings.maxRetries = parseInt(document.getElementById('maxRetries').value) || 2;
-            settings.smsDelay = parseInt(document.getElementById('smsDelay').value) || 1000;
-            localStorage.setItem('smsSettings', JSON.stringify(settings));
-            alert('✅ Settings saved!');
-            addLogToUI('info', `⚙️ Settings: Fail threshold=${settings.maxFailuresBeforeSwitch}, Delay=${settings.smsDelay}ms`);
-        }
-        
-        // ==================== INIT ====================
-        window.onload = () => {
-            initFirebase();
-            loadConfigToUI();
-        };
-        
-        window.addEventListener('beforeunload', (e) => {
-            if (isSending) {
-                e.preventDefault();
-                e.returnValue = 'Sending in progress!';
             }
         });
+
+        function handleExcelFile(file) {
+            if (!file) return;
+
+            var infoEl = document.getElementById('excel-info');
+            var countEl = document.getElementById('excel-count');
+            infoEl.classList.remove('show');
+
+            if (!file.name.match(/\.(xlsx|xls|csv)$/i)) {
+                showToast('❌ Please upload .xlsx, .xls, or .csv file');
+                return;
+            }
+
+            var reader = new FileReader();
+            reader.onload = function(e) {
+                try {
+                    var data = new Uint8Array(e.target.result);
+                    var workbook = XLSX.read(data, { type: 'array' });
+                    var firstSheet = workbook.Sheets[workbook.SheetNames[0]];
+                    var jsonData = XLSX.utils.sheet_to_json(firstSheet);
+
+                    if (!jsonData || jsonData.length === 0) {
+                        showToast('❌ No data found in Excel!');
+                        return;
+                    }
+
+                    // Find phone column
+                    var headers = Object.keys(jsonData[0]);
+                    var phoneCol = null;
+                    var possibleNames = ['number', 'phone', 'mobile', 'contact', 'phone number', 'mobile number', 'phone_no',
+                        'mobileno'
+                    ];
+
+                    for (var i = 0; i < headers.length; i++) {
+                        var h = headers[i].toLowerCase().trim();
+                        if (possibleNames.some(function(p) { return h.indexOf(p) !== -1; })) {
+                            phoneCol = headers[i];
+                            break;
+                        }
+                    }
+
+                    if (!phoneCol) {
+                        showToast('❌ No phone column found! Use "Number" or "Phone"');
+                        return;
+                    }
+
+                    // Extract numbers
+                    var numbers = [];
+                    for (var i = 0; i < jsonData.length; i++) {
+                        var num = String(jsonData[i][phoneCol] || '').trim();
+                        if (num) {
+                            num = num.replace(/[^0-9+]/g, '');
+                            if (num.length >= 10) {
+                                numbers.push(num);
+                            }
+                        }
+                    }
+
+                    if (numbers.length === 0) {
+                        showToast('❌ No valid numbers found!');
+                        return;
+                    }
+
+                    BULK_STATE.numbers = numbers;
+                    BULK_STATE.total = numbers.length;
+
+                    countEl.textContent = numbers.length;
+                    infoEl.classList.add('show');
+                    showToast('✅ ' + numbers.length + ' numbers loaded!');
+                    document.getElementById('start-btn').disabled = false;
+
+                } catch (err) {
+                    showToast('❌ Error reading file: ' + err.message);
+                }
+            };
+            reader.readAsArrayBuffer(file);
+        }
+
+        // ============================================================
+        // TEMPLATE HANDLER
+        // ============================================================
+
+        function handleTemplateSelect(templateId) {
+            var customTextarea = document.getElementById('custom-template');
+            var previewEl = document.getElementById('template-preview');
+
+            if (templateId === 'custom') {
+                customTextarea.style.display = 'block';
+                previewEl.classList.remove('show');
+                customTextarea.addEventListener('input', function() {
+                    previewEl.textContent = customTextarea.value;
+                    if (customTextarea.value.trim()) {
+                        previewEl.classList.add('show');
+                    } else {
+                        previewEl.classList.remove('show');
+                    }
+                });
+                return;
+            }
+
+            customTextarea.style.display = 'none';
+
+            if (templateId && SMS_TEMPLATES[templateId]) {
+                var template = SMS_TEMPLATES[templateId];
+                previewEl.textContent = '📝 ' + template.body;
+                previewEl.classList.add('show');
+                BULK_STATE.msg = template.body;
+            } else {
+                previewEl.classList.remove('show');
+                BULK_STATE.msg = '';
+            }
+        }
+
+        // ============================================================
+        // MAIN START FUNCTION
+        // ============================================================
+
+        function startBulkSend() {
+            // Check connection
+            if (!IS_CONNECTED) {
+                showToast('❌ Pehle Firebase connect karo!');
+                return;
+            }
+
+            // Get message
+            var templateId = document.getElementById('template-select').value;
+            var customMsg = document.getElementById('custom-template').value.trim();
+
+            var msg = '';
+            if (templateId === 'custom') {
+                msg = customMsg;
+            } else if (templateId && SMS_TEMPLATES[templateId]) {
+                msg = SMS_TEMPLATES[templateId].body;
+            }
+
+            if (!msg) {
+                showToast('⚠️ Template select karo ya custom message likho!');
+                return;
+            }
+
+            // Get numbers
+            var numbers = BULK_STATE.numbers;
+            if (!numbers || numbers.length === 0) {
+                showToast('⚠️ Pehle Excel file upload karo!');
+                return;
+            }
+
+            // Get settings
+            var perDevice = parseInt(document.getElementById('sms-per-device').value) || 100;
+            if (perDevice > 500) perDevice = 500;
+            if (perDevice < 1) perDevice = 1;
+
+            var delay = parseFloat(document.getElementById('sms-delay').value) || 1.5;
+            if (delay < 0.5) delay = 0.5;
+            if (delay > 5) delay = 5;
+
+            // Get online devices from Firebase
+            var auth = APIKEY ? '?auth=' + encodeURIComponent(APIKEY) : '';
+            var url = DB + '/' + NODE + '/All_User/Info.json' + auth;
+
+            showToast('🔄 Fetching online devices...');
+
+            fetch(url)
+                .then(function(r) {
+                    if (!r.ok) throw new Error('HTTP ' + r.status);
+                    return r.json();
+                })
+                .then(function(infoData) {
+                    if (!infoData || typeof infoData !== 'object') {
+                        throw new Error('No devices found');
+                    }
+
+                    var devices = [];
+                    var keys = Object.keys(infoData);
+                    for (var i = 0; i < keys.length; i++) {
+                        var d = infoData[keys[i]];
+                        if (d && typeof d === 'object') {
+                            var status = String(d.status || d.Status || '').toLowerCase();
+                            if (status === 'online' || status === 'yes' || status === 'true') {
+                                devices.push({
+                                    key: keys[i],
+                                    did: d.did || d.Did || keys[i],
+                                    name: d.Name || d.name || keys[i]
+                                });
+                            }
+                        }
+                    }
+
+                    if (devices.length === 0) {
+                        throw new Error('No online devices found!');
+                    }
+
+                    showToast('✅ ' + devices.length + ' online devices found!');
+                    startSending(numbers, msg, devices, perDevice, delay);
+
+                })
+                .catch(function(e) {
+                    showToast('❌ Error fetching devices: ' + e.message);
+                });
+        }
+
+        // ============================================================
+        // CORE SENDING LOGIC
+        // ============================================================
+
+        function startSending(numbers, msg, devices, perDevice, delay) {
+            // Initialize state
+            BULK_STATE.running = true;
+            BULK_STATE.stopped = false;
+            BULK_STATE.msg = msg;
+            BULK_STATE.perDevice = perDevice;
+            BULK_STATE.delay = delay;
+            BULK_STATE.sent = 0;
+            BULK_STATE.failed = 0;
+            BULK_STATE.processed = 0;
+            BULK_STATE.total = numbers.length;
+            BULK_STATE.currentDeviceIndex = 0;
+            BULK_STATE.devices = devices;
+            BULK_STATE.failedNumbers = [];
+
+            // Show progress
+            var progressWrap = document.getElementById('progress-wrap');
+            progressWrap.classList.add('show');
+            document.getElementById('stop-btn').style.display = 'block';
+            document.getElementById('start-btn').disabled = true;
+            document.getElementById('start-btn').textContent = '⏳ Sending...';
+
+            // Start sending
+            sendBatch(0);
+        }
+
+        function sendBatch(startIndex) {
+            if (!BULK_STATE.running || BULK_STATE.stopped) {
+                finishBulkSend('⏹️ Stopped by user');
+                return;
+            }
+
+            var numbers = BULK_STATE.numbers;
+            var perDevice = BULK_STATE.perDevice;
+            var total = BULK_STATE.total;
+
+            if (startIndex >= total) {
+                finishBulkSend('✅ Complete! All ' + total + ' SMS sent!');
+                return;
+            }
+
+            var deviceIndex = BULK_STATE.currentDeviceIndex;
+            var devices = BULK_STATE.devices;
+
+            if (deviceIndex >= devices.length) {
+                finishBulkSend('⚠️ No more devices! ' + (total - startIndex) + ' numbers pending');
+                return;
+            }
+
+            var device = devices[deviceIndex];
+            var did = device.did || device.key;
+            var batchSize = Math.min(perDevice, total - startIndex);
+            var endIndex = startIndex + batchSize;
+            var batchNumbers = numbers.slice(startIndex, endIndex);
+
+            // Update progress
+            document.getElementById('progress-status').textContent = '📤 Sending from ' + device.name;
+            document.getElementById('progress-device').textContent = 'Device: ' + device.name;
+            document.getElementById('progress-batch').textContent = 'Batch: ' + (startIndex + 1) + '-' + endIndex + ' (of ' +
+                total + ')';
+
+            // Send batch
+            sendBatchWithProgress(batchNumbers, BULK_STATE.msg, did, function(result) {
+                BULK_STATE.sent += result.sent;
+                BULK_STATE.failed += result.failed;
+                BULK_STATE.processed += result.sent + result.failed;
+
+                if (result.failedNumbers && result.failedNumbers.length > 0) {
+                    BULK_STATE.failedNumbers = BULK_STATE.failedNumbers.concat(result.failedNumbers);
+                }
+
+                // Update progress UI
+                var progress = (BULK_STATE.processed / total) * 100;
+                document.getElementById('progress-count').textContent = BULK_STATE.processed + ' / ' + total;
+                document.getElementById('progress-bar').style.width = Math.min(progress, 100) + '%';
+                document.getElementById('progress-sent').textContent = '✅ Sent: ' + BULK_STATE.sent;
+                document.getElementById('progress-failed').textContent = '❌ Failed: ' + BULK_STATE.failed;
+
+                // Show failed numbers
+                var failedLog = document.getElementById('failed-log');
+                if (BULK_STATE.failedNumbers.length > 0) {
+                    failedLog.textContent = '❌ Failed numbers: ' + BULK_STATE.failedNumbers.join(', ');
+                    failedLog.classList.add('show');
+                }
+
+                // Move to next device
+                BULK_STATE.currentDeviceIndex++;
+
+                // Continue with next batch
+                setTimeout(function() {
+                    sendBatch(endIndex);
+                }, 2000);
+            });
+        }
+
+        function sendBatchWithProgress(numbers, msg, did, callback) {
+            var result = { sent: 0, failed: 0, failedNumbers: [] };
+            var auth = APIKEY ? '?auth=' + encodeURIComponent(APIKEY) : '';
+            var url = DB + '/Verify_Device/' + did + '.json' + auth;
+
+            var total = numbers.length;
+            var completed = 0;
+
+            if (total === 0) {
+                callback(result);
+                return;
+            }
+
+            numbers.forEach(function(number, index) {
+                var delayMs = (BULK_STATE.delay || 1.5) * 1000;
+                setTimeout(function() {
+                    sendSingleSmsWithRetry(number.trim(), msg, did, url, function(success) {
+                        if (success) {
+                            result.sent++;
+                        } else {
+                            result.failed++;
+                            result.failedNumbers.push(number.trim());
+                        }
+                        completed++;
+                        if (completed === total) {
+                            callback(result);
+                        }
+                    });
+                }, index * delayMs);
+            });
+        }
+
+        function sendSingleSmsWithRetry(number, msg, did, url, callback) {
+            var retryAttempts = 0;
+            var maxRetries = 3;
+
+            function attemptSend() {
+                fetch(url, {
+                    method: 'PUT',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ Number: number, Body: msg, Status: 'Yes' })
+                })
+                .then(function(r) {
+                    if (!r.ok) throw new Error('HTTP ' + r.status);
+                    return r.json();
+                })
+                .then(function() {
+                    callback(true);
+                })
+                .catch(function(e) {
+                    retryAttempts++;
+                    if (retryAttempts < maxRetries) {
+                        setTimeout(attemptSend, 3000);
+                    } else {
+                        console.error('Failed to send SMS to', number, e.message);
+                        callback(false);
+                    }
+                });
+            }
+
+            attemptSend();
+        }
+
+        // ============================================================
+        // STOP & FINISH
+        // ============================================================
+
+        function stopBulkSend() {
+            BULK_STATE.stopped = true;
+            showToast('⏹️ Stopping...');
+            document.getElementById('stop-btn').style.display = 'none';
+        }
+
+        function finishBulkSend(message) {
+            BULK_STATE.running = false;
+            document.getElementById('start-btn').disabled = false;
+            document.getElementById('start-btn').textContent = '🚀 Start Bulk Sending';
+            document.getElementById('stop-btn').style.display = 'none';
+            document.getElementById('progress-status').textContent = message;
+
+            var stats = '✅ Sent: ' + BULK_STATE.sent +
+                ' | ❌ Failed: ' + BULK_STATE.failed +
+                ' | 📊 Total: ' + BULK_STATE.total;
+
+            document.getElementById('progress-sent').textContent = '✅ Sent: ' + BULK_STATE.sent;
+            document.getElementById('progress-failed').textContent = '❌ Failed: ' + BULK_STATE.failed;
+
+            showToast('📊 ' + stats);
+
+            // Log to Firebase
+            if (BULK_STATE.failedNumbers.length > 0) {
+                var auth = APIKEY ? '?auth=' + encodeURIComponent(APIKEY) : '';
+                var logUrl = DB + '/' + NODE + '/bulk_logs/' + Date.now() + '.json' + auth;
+                fetch(logUrl, {
+                    method: 'PUT',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        timestamp: new Date().toISOString(),
+                        total: BULK_STATE.total,
+                        sent: BULK_STATE.sent,
+                        failed: BULK_STATE.failed,
+                        failedNumbers: BULK_STATE.failedNumbers,
+                        message: BULK_STATE.msg,
+                        perDevice: BULK_STATE.perDevice,
+                        devicesUsed: BULK_STATE.devices.slice(0, BULK_STATE.currentDeviceIndex).map(function(d) {
+                            return d.name;
+                        })
+                    })
+                }).catch(function(e) { console.error('Log save failed:', e); });
+            }
+        }
+
+        // ============================================================
+        // TOAST
+        // ============================================================
+
+        var TOAST_TIMER = null;
+
+        function showToast(msg) {
+            var t = document.getElementById('toast');
+            t.textContent = msg;
+            t.classList.add('show');
+            clearTimeout(TOAST_TIMER);
+            TOAST_TIMER = setTimeout(function() {
+                t.classList.remove('show');
+            }, 3000);
+        }
+
+        // ============================================================
+        // AUTO-CONNECT FROM URL PARAMS (Optional)
+        // ============================================================
+
+        (function() {
+            var params = new URLSearchParams(window.location.search);
+            var furl = params.get('furl');
+            var key = params.get('key');
+            var node = params.get('node');
+            if (furl) {
+                document.getElementById('fb-url').value = furl;
+                if (key) document.getElementById('fb-key').value = key;
+                if (node) document.getElementById('fb-node').value = node;
+                setTimeout(connectFirebase, 500);
+            }
+        })();
+
+        console.log('📨 Bulk SMS Sender Pro 2026 loaded!');
+        console.log('🔥 Firebase path: /' + NODE + '/All_User/Info');
+        console.log('📤 SMS via: /' + NODE + '/Verify_Device/{did}');
     </script>
+
 </body>
 </html>
